@@ -32,6 +32,12 @@ gem "rack-cors"
 # Serialize ActiveRecord objects to JSON for the API
 gem "active_model_serializers", "~> 0.10.14"
 
+# Background job processing backed by Redis
+gem "sidekiq", "~> 7.3"
+
+# Outbound REST API client used by IntegrationService
+gem "httparty", "~> 0.22"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
@@ -50,6 +56,9 @@ group :development, :test do
 
   # Load env vars from .env in development/test
   gem "dotenv-rails"
+
+  # Stub external HTTP calls in specs
+  gem "webmock", "~> 3.24"
 end
 
 
