@@ -1,0 +1,28 @@
+# Default to auto-detect on text files; let git normalize on commit.
+* text=auto
+
+# Files that MUST use LF line endings (otherwise they break inside Linux
+# containers or fail YAML parsing on CI).
+*.sh             text eol=lf
+*.yml            text eol=lf
+*.yaml           text eol=lf
+Dockerfile       text eol=lf
+Dockerfile.*     text eol=lf
+.dockerignore    text eol=lf
+bin/*            text eol=lf
+*.rb             text eol=lf
+*.erb            text eol=lf
+*.rake           text eol=lf
+Gemfile          text eol=lf
+Gemfile.lock     text eol=lf
+Rakefile         text eol=lf
+config.ru        text eol=lf
+
+# Binary files - never normalize.
+*.png            binary
+*.jpg            binary
+*.jpeg           binary
+*.gif            binary
+*.ico            binary
+*.woff           binary
+*.woff2          binary

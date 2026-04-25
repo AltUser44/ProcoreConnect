@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -----------------------------------------------------------------------
+  # Backend: full RSpec suite against real Postgres + Redis service
+  # containers (mirrors production wiring).
+  # -----------------------------------------------------------------------
+  backend:
+    name: Backend (RSpec)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: procoreconnect_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      RAILS_ENV: test
+      DATABASE_HOST: localhost
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://localhost:6379/0
+      # JWT_SECRET + AR_ENCRYPTION_* fall back to dev placeholders in
+      # non-production environments, so we don't need to set them here.
+
+    defaults:
+      run:
+        working-directory: procoreconnect
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version-file: procoreconnect/.ruby-version
+          bundler-cache: true
+          working-directory: procoreconnect
+
+      - name: Prepare test database
+        run: bundle exec rails db:prepare
+
+      - name: Run RSpec
+        run: bundle exec rspec --format documentation
+
+  # -----------------------------------------------------------------------
+  # Frontend: lint + production build to catch type errors and broken
+  # imports before they ship.
+  # -----------------------------------------------------------------------
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: procoreconnect/client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: procoreconnect/client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Type-check + production build
+        run: npm run build
+
+  # -----------------------------------------------------------------------
+  # Docker: build both images so a broken Dockerfile fails CI immediately
+  # rather than at deploy time. We don't push - that's a separate workflow.
+  # -----------------------------------------------------------------------
+  docker-build:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Rails image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./procoreconnect
+          file: ./procoreconnect/Dockerfile
+          push: false
+          tags: procoreconnect/web:ci
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./procoreconnect/client
+          file: ./procoreconnect/client/Dockerfile
+          push: false
+          tags: procoreconnect/frontend:ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max

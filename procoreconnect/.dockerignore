@@ -40,3 +40,10 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Frontend lives in its own image; never copy it into the Rails image.
+/client
+
+# RSpec + coverage artifacts.
+/coverage
+/spec/examples.txt
