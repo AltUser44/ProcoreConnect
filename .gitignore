@@ -1,0 +1,22 @@
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env (safety net in case anything lands at repo root)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Bundler caches at root
+/.bundle
