@@ -58,6 +58,11 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
+  # In development, run background jobs in-process (thread pool) so we don't
+  # require a running Redis/Sidekiq locally. Production still uses Sidekiq via
+  # config/application.rb. Set USE_SIDEKIQ=1 to override and use Sidekiq in dev.
+  config.active_job.queue_adapter = ENV["USE_SIDEKIQ"] == "1" ? :sidekiq : :async
+
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true
 
