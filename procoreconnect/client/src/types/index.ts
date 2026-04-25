@@ -50,3 +50,26 @@ export interface ApiErrorBody {
   error?: string;
   errors?: string[];
 }
+
+export interface User {
+  id: number;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface LoginValues {
+  email: string;
+  password: string;
+}
+
+export interface RegisterValues {
+  email: string;
+  password: string;
+  password_confirmation: string;
+}

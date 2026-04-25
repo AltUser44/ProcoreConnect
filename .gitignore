@@ -20,3 +20,7 @@ Desktop.ini
 
 # Bundler caches at root
 /.bundle
+
+# Local commit message scratch file
+.commit-msg.tmp
+

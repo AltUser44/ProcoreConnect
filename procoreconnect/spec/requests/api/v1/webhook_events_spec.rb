@@ -3,6 +3,16 @@ require "rails_helper"
 RSpec.describe "Api::V1::WebhookEvents", type: :request do
   let(:json) { JSON.parse(response.body) }
   let(:integration) { create(:integration) }
+  let(:user) { create(:user) }
+  let(:headers) { auth_headers(user) }
+
+  describe "authentication" do
+    it "returns 401 without a token" do
+      get "/api/v1/integrations/#{integration.id}/webhook_events"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
 
   describe "GET /api/v1/integrations/:integration_id/webhook_events" do
     let!(:older_event) { create(:webhook_event, integration: integration, created_at: 2.days.ago) }
@@ -10,7 +20,7 @@ RSpec.describe "Api::V1::WebhookEvents", type: :request do
     let!(:other_event) { create(:webhook_event, integration: create(:integration)) }
 
     it "returns this integration's events newest-first with processed flags" do
-      get "/api/v1/integrations/#{integration.id}/webhook_events"
+      get "/api/v1/integrations/#{integration.id}/webhook_events", headers: headers
 
       expect(response).to have_http_status(:ok)
       expect(json.size).to eq(2)
@@ -24,7 +34,8 @@ RSpec.describe "Api::V1::WebhookEvents", type: :request do
     let!(:event) { create(:webhook_event, integration: integration) }
 
     it "returns 200 with the event payload" do
-      get "/api/v1/integrations/#{integration.id}/webhook_events/#{event.id}"
+      get "/api/v1/integrations/#{integration.id}/webhook_events/#{event.id}",
+          headers: headers
 
       expect(response).to have_http_status(:ok)
       expect(json["id"]).to eq(event.id)
@@ -34,7 +45,8 @@ RSpec.describe "Api::V1::WebhookEvents", type: :request do
     it "returns 404 if the event belongs to another integration" do
       foreign_event = create(:webhook_event, integration: create(:integration))
 
-      get "/api/v1/integrations/#{integration.id}/webhook_events/#{foreign_event.id}"
+      get "/api/v1/integrations/#{integration.id}/webhook_events/#{foreign_event.id}",
+          headers: headers
 
       expect(response).to have_http_status(:not_found)
     end

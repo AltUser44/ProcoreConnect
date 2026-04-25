@@ -1,6 +1,8 @@
 module Api
   module V1
     class BaseController < ApplicationController
+      include Authenticatable
+
       rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
       rescue_from ActiveRecord::RecordInvalid, with: :render_unprocessable
       rescue_from ActionController::ParameterMissing, with: :render_bad_request

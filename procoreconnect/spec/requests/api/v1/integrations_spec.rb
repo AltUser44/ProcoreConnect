@@ -2,13 +2,23 @@ require "rails_helper"
 
 RSpec.describe "Api::V1::Integrations", type: :request do
   let(:json) { JSON.parse(response.body) }
+  let(:user) { create(:user) }
+  let(:headers) { auth_headers(user) }
+
+  describe "authentication" do
+    it "returns 401 without a token" do
+      get "/api/v1/integrations"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
 
   describe "GET /api/v1/integrations" do
     let!(:integration_a) { create(:integration, name: "Procore A") }
     let!(:integration_b) { create(:integration, :paused, name: "Procore B") }
 
     it "returns 200 with all integrations" do
-      get "/api/v1/integrations"
+      get "/api/v1/integrations", headers: headers
 
       expect(response).to have_http_status(:ok)
       expect(json.size).to eq(2)
@@ -16,7 +26,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
     end
 
     it "does not expose api_key" do
-      get "/api/v1/integrations"
+      get "/api/v1/integrations", headers: headers
 
       expect(json.first.keys).not_to include("api_key")
     end
@@ -26,7 +36,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
     let(:integration) { create(:integration) }
 
     it "returns 200 with the integration" do
-      get "/api/v1/integrations/#{integration.id}"
+      get "/api/v1/integrations/#{integration.id}", headers: headers
 
       expect(response).to have_http_status(:ok)
       expect(json["id"]).to eq(integration.id)
@@ -35,7 +45,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
     end
 
     it "returns 404 when integration is missing" do
-      get "/api/v1/integrations/0"
+      get "/api/v1/integrations/0", headers: headers
 
       expect(response).to have_http_status(:not_found)
       expect(json["error"]).to be_present
@@ -56,7 +66,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
 
     it "creates an integration and returns 201" do
       expect {
-        post "/api/v1/integrations", params: valid_params, as: :json
+        post "/api/v1/integrations", params: valid_params, headers: headers, as: :json
       }.to change(Integration, :count).by(1)
 
       expect(response).to have_http_status(:created)
@@ -67,6 +77,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
     it "returns 422 with errors on invalid params" do
       post "/api/v1/integrations",
            params: { integration: { name: "" } },
+           headers: headers,
            as: :json
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -80,6 +91,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
     it "updates the integration and returns 200" do
       put "/api/v1/integrations/#{integration.id}",
           params: { integration: { status: "paused" } },
+          headers: headers,
           as: :json
 
       expect(response).to have_http_status(:ok)
@@ -90,6 +102,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
     it "returns 422 on invalid update" do
       put "/api/v1/integrations/#{integration.id}",
           params: { integration: { status: "bogus" } },
+          headers: headers,
           as: :json
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -102,7 +115,7 @@ RSpec.describe "Api::V1::Integrations", type: :request do
 
     it "destroys the integration and returns 204" do
       expect {
-        delete "/api/v1/integrations/#{integration.id}"
+        delete "/api/v1/integrations/#{integration.id}", headers: headers
       }.to change(Integration, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)

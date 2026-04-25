@@ -1,6 +1,11 @@
 module Api
   module V1
     class WebhooksController < BaseController
+      # Inbound third-party webhooks can't carry a user JWT. They should
+      # eventually authenticate via shared-secret signature (Phase X);
+      # for now we explicitly bypass JWT auth on this endpoint only.
+      skip_before_action :authenticate_user!, only: :receive
+
       before_action :load_integration
 
       def receive
