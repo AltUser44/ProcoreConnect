@@ -5,6 +5,7 @@ export interface Integration {
   name: string;
   status: IntegrationStatus;
   webhook_url: string | null;
+  webhook_secret: string;
   api_endpoint: string;
   last_synced_at: string | null;
   sync_logs_count: number;

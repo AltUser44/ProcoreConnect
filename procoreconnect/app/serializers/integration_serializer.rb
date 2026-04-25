@@ -3,6 +3,7 @@ class IntegrationSerializer < ActiveModel::Serializer
              :name,
              :status,
              :webhook_url,
+             :webhook_secret,
              :api_endpoint,
              :last_synced_at,
              :sync_logs_count,

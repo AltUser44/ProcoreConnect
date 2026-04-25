@@ -2,9 +2,10 @@ require "rails_helper"
 
 RSpec.describe "Api::V1::SyncLogs", type: :request do
   let(:json) { JSON.parse(response.body) }
-  let(:integration) { create(:integration) }
   let(:user) { create(:user) }
+  let(:integration) { create(:integration, user: user) }
   let(:headers) { auth_headers(user) }
+  let(:other_user) { create(:user) }
 
   describe "authentication" do
     it "returns 401 without a token" do
@@ -17,7 +18,7 @@ RSpec.describe "Api::V1::SyncLogs", type: :request do
   describe "GET /api/v1/integrations/:integration_id/sync_logs" do
     let!(:older_log) { create(:sync_log, integration: integration, created_at: 2.days.ago) }
     let!(:newer_log) { create(:sync_log, :success, integration: integration, created_at: 1.hour.ago) }
-    let!(:other_log) { create(:sync_log, integration: create(:integration)) }
+    let!(:other_log) { create(:sync_log, integration: create(:integration, user: other_user)) }
 
     it "returns 200 with only that integration's sync logs, newest first" do
       get "/api/v1/integrations/#{integration.id}/sync_logs", headers: headers
@@ -49,10 +50,19 @@ RSpec.describe "Api::V1::SyncLogs", type: :request do
     end
 
     it "returns 404 when the sync log does not belong to this integration" do
-      foreign_log = create(:sync_log, integration: create(:integration))
+      foreign_log = create(:sync_log, integration: create(:integration, user: other_user))
 
       get "/api/v1/integrations/#{integration.id}/sync_logs/#{foreign_log.id}",
           headers: headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns 404 when listing sync logs for another user's integration" do
+      foreign_integration = create(:integration, user: other_user)
+      create(:sync_log, integration: foreign_integration)
+
+      get "/api/v1/integrations/#{foreign_integration.id}/sync_logs", headers: headers
 
       expect(response).to have_http_status(:not_found)
     end

@@ -1,5 +1,6 @@
 FactoryBot.define do
   factory :integration do
+    user
     sequence(:name) { |n| "#{Faker::Company.name} ##{n}" }
     status { "active" }
     api_endpoint { Faker::Internet.url(host: "api.example.com") }

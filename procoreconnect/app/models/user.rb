@@ -3,6 +3,8 @@ class User < ApplicationRecord
 
   has_secure_password
 
+  has_many :integrations, dependent: :destroy
+
   before_validation :normalize_email
 
   validates :email,

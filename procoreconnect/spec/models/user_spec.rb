@@ -19,6 +19,10 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "associations" do
+    it { is_expected.to have_many(:integrations).dependent(:destroy) }
+  end
+
   describe "#authenticate" do
     let(:user) { create(:user, password: "supersecret123", password_confirmation: "supersecret123") }
 

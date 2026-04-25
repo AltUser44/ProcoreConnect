@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_25_055554) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_25_081557) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -23,8 +23,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_25_055554) do
     t.datetime "last_synced_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["name"], name: "index_integrations_on_name", unique: true
+    t.bigint "user_id", null: false
+    t.string "webhook_secret", null: false
     t.index ["status"], name: "index_integrations_on_status"
+    t.index ["user_id", "name"], name: "index_integrations_on_user_id_and_name", unique: true
+    t.index ["user_id"], name: "index_integrations_on_user_id"
+    t.index ["webhook_secret"], name: "index_integrations_on_webhook_secret", unique: true
   end
 
   create_table "sync_logs", force: :cascade do |t|
@@ -64,6 +68,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_25_055554) do
     t.index ["processed"], name: "index_webhook_events_on_processed"
   end
 
+  add_foreign_key "integrations", "users"
   add_foreign_key "sync_logs", "integrations"
   add_foreign_key "webhook_events", "integrations"
 end

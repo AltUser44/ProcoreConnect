@@ -2,9 +2,10 @@ require "rails_helper"
 
 RSpec.describe "Api::V1::WebhookEvents", type: :request do
   let(:json) { JSON.parse(response.body) }
-  let(:integration) { create(:integration) }
   let(:user) { create(:user) }
+  let(:integration) { create(:integration, user: user) }
   let(:headers) { auth_headers(user) }
+  let(:other_user) { create(:user) }
 
   describe "authentication" do
     it "returns 401 without a token" do
@@ -17,7 +18,7 @@ RSpec.describe "Api::V1::WebhookEvents", type: :request do
   describe "GET /api/v1/integrations/:integration_id/webhook_events" do
     let!(:older_event) { create(:webhook_event, integration: integration, created_at: 2.days.ago) }
     let!(:newer_event) { create(:webhook_event, :processed, integration: integration, created_at: 1.hour.ago) }
-    let!(:other_event) { create(:webhook_event, integration: create(:integration)) }
+    let!(:other_event) { create(:webhook_event, integration: create(:integration, user: other_user)) }
 
     it "returns this integration's events newest-first with processed flags" do
       get "/api/v1/integrations/#{integration.id}/webhook_events", headers: headers
@@ -43,10 +44,19 @@ RSpec.describe "Api::V1::WebhookEvents", type: :request do
     end
 
     it "returns 404 if the event belongs to another integration" do
-      foreign_event = create(:webhook_event, integration: create(:integration))
+      foreign_event = create(:webhook_event, integration: create(:integration, user: other_user))
 
       get "/api/v1/integrations/#{integration.id}/webhook_events/#{foreign_event.id}",
           headers: headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns 404 when listing events for another user's integration" do
+      foreign_integration = create(:integration, user: other_user)
+      create(:webhook_event, integration: foreign_integration)
+
+      get "/api/v1/integrations/#{foreign_integration.id}/webhook_events", headers: headers
 
       expect(response).to have_http_status(:not_found)
     end

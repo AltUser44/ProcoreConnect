@@ -16,7 +16,7 @@ module Api
       private
 
       def load_integration
-        @integration = Integration.find(params[:integration_id])
+        @integration = current_user.integrations.find(params[:integration_id])
       end
     end
   end

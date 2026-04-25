@@ -4,7 +4,7 @@ module Api
       before_action :load_integration, only: %i[show update destroy]
 
       def index
-        integrations = Integration.order(created_at: :desc)
+        integrations = current_user.integrations.order(created_at: :desc)
         render json: integrations, each_serializer: IntegrationSerializer, status: :ok
       end
 
@@ -13,7 +13,7 @@ module Api
       end
 
       def create
-        integration = Integration.new(integration_params)
+        integration = current_user.integrations.new(integration_params)
 
         if integration.save
           render json: integration, serializer: IntegrationSerializer, status: :created
@@ -38,7 +38,7 @@ module Api
       private
 
       def load_integration
-        @integration = Integration.find(params[:id])
+        @integration = current_user.integrations.find(params[:id])
       end
 
       def integration_params

@@ -1,12 +1,13 @@
 module Api
   module V1
     class WebhooksController < BaseController
-      # Inbound third-party webhooks can't carry a user JWT. They should
-      # eventually authenticate via shared-secret signature (Phase X);
-      # for now we explicitly bypass JWT auth on this endpoint only.
+      # Inbound third-party webhooks can't carry a user JWT. Instead they
+      # authenticate via an HMAC-SHA256 signature of the raw body using the
+      # integration's webhook_secret, sent in the X-Webhook-Signature header.
       skip_before_action :authenticate_user!, only: :receive
 
       before_action :load_integration
+      before_action :verify_signature, only: :receive
 
       def receive
         webhook_event = @integration.webhook_events.create!(
@@ -23,6 +24,14 @@ module Api
 
       def load_integration
         @integration = Integration.find(params[:integration_id])
+      end
+
+      def verify_signature
+        signature = request.headers["X-Webhook-Signature"]
+        return if @integration.valid_webhook_signature?(signature, request.raw_post)
+
+        render json: { error: "Invalid or missing webhook signature" },
+               status: :unauthorized
       end
 
       # Trust the explicit X-Event-Type header set by the third-party webhook

@@ -12,6 +12,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { SyncLogTable } from "../components/SyncLogTable";
 import { WebhookEventList } from "../components/WebhookEventList";
 import { SyncChart } from "../components/SyncChart";
+import { WebhookSetup } from "../components/WebhookSetup";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { formatDateTime } from "../utils/format";
 
@@ -138,6 +139,8 @@ export function IntegrationDetail() {
           <Stat label="Webhook URL" value={integration.webhook_url ?? "—"} mono />
         </dl>
       </section>
+
+      <WebhookSetup integration={integration} />
 
       <SyncChart logs={logs} />
 
