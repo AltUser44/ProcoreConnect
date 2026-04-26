@@ -183,9 +183,11 @@ $stagedUserData = Join-Path $env:TEMP "procoreconnect-userdata-$([IO.Path]::GetF
 Copy-Item -LiteralPath $userDataPath -Destination $stagedUserData -Force
 $stagedPath = (Resolve-Path -LiteralPath $stagedUserData).Path
 $stagedF = $stagedPath -replace "\\", "/"
-# fileb:// = binary read + base64 (safe for shebang + line endings on Windows)
-if ($stagedF -match "^[A-Z]:") { $udUrl = "fileb:///" + $stagedF } else { $udUrl = "fileb://" + $stagedF }
+# fileb:// = binary read + base64. On Windows use fileb://C:/... (ONE slash after the colon: fileb://
+# + C:/...). A fourth slash (fileb:///C:/...) becomes /C:/... and the CLI hits Errno 22.
+$udUrl = "fileb://" + $stagedF
 Write-Host "Staged user-data for AWS CLI: $stagedPath" -ForegroundColor DarkGray
+Write-Host "user-data URL: $udUrl" -ForegroundColor DarkGray
 
 # --- Launch instance -------------------------------------------------------
 $instanceId = (& aws ec2 run-instances --profile $ProfileName --region $Region `
