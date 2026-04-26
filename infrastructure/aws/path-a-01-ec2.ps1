@@ -110,32 +110,25 @@ if ($allSgs -and $allSgs -ne "None") {
 }
 
 # Ingress. Re-run is OK when rules already exist (API returns a Duplicate error).
-# Pass --group-id on the CLI; put ONLY the IpPermissions list in a %TEMP% JSON
-# and pass with --ip-permissions file://...  (a full --cli-input-json with GroupId
-# in the file can fail on Windows AWS CLI 2 with exit 252 and no error text).
+# Pass --ip-permissions as one JSON *array* argument (see splat below). Using
+# file:// for this param often yields exit 252 and no text on some Windows + AWS CLI 2
+# builds, even with valid JSON in %TEMP%.
 function Add-SGRule {
   param([int] $port, [string] $cidr)
-  # One permission per call. Must be a real JSON *array* — PS ConvertTo-Json
-  # of a 1-item array can omit the outer "[]" and then the CLI paramfile is invalid.
-  $perm = [ordered]@{
-    IpProtocol = "tcp"
-    FromPort   = $port
-    ToPort     = $port
-    IpRanges   = @([ordered]@{ CidrIp = $cidr })
-  }
-  $json = (ConvertTo-Json -InputObject ( , $perm ) -Depth 5 -Compress)
-  $jf   = Join-Path $env:TEMP "pc-sg-ingress-$(New-Guid).json"
-  $enc  = New-Object System.Text.UTF8Encoding $false
-  [IO.File]::WriteAllText($jf, $json, $enc)
-  $jUri = "file:///" + ((Resolve-Path -LiteralPath $jf).Path -replace "\\", "/")
+  if ($cidr -match '["\x00]') { throw "Refusing security group rule: invalid CIDR characters" }
+  $ipPermJson = "[{`"IpProtocol`":`"tcp`",`"FromPort`":$port,`"ToPort`":$port,`"IpRanges`":[{`"CidrIp`":`"$cidr`"}]}]"
 
   $oldE = $ErrorActionPreference
   $ErrorActionPreference = "SilentlyContinue"
-  $raw  = & aws ec2 authorize-security-group-ingress --profile $ProfileName --region $Region `
-    --group-id $sgId --ip-permissions $jUri 2>&1
+  $raw  = & aws @(
+    "ec2", "authorize-security-group-ingress"
+    "--profile", $ProfileName
+    "--region", $Region
+    "--group-id", $sgId
+    "--ip-permissions", $ipPermJson
+  ) 2>&1
   $ex   = $LASTEXITCODE
   $ErrorActionPreference = $oldE
-  Remove-Item -LiteralPath $jf -ErrorAction SilentlyContinue
 
   $rawStr = ($raw | ForEach-Object {
     if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.Exception.Message } else { "$_" }
