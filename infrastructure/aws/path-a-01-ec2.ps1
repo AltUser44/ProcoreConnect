@@ -114,33 +114,48 @@ if ($allSgs -and $allSgs -ne "None") {
 #   IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=1.1.1.1/32}]
 # A *JSON* string starting with '[' is the wrong format for the inline value and
 # causes exit 252 with no text on the AWS CLI. New PowerShell has nothing to do with it.
+function Test-SGRuleExists {
+  param([int] $port, [string] $cidr)
+  $j = & aws ec2 describe-security-groups --profile $ProfileName --region $Region --group-ids $sgId --output json
+  if ($LASTEXITCODE -ne 0) { return $false }
+  $sg = $j | ConvertFrom-Json
+  foreach ($perm in $sg.SecurityGroups[0].IpPermissions) {
+    if ($perm.IpProtocol -ne "tcp" -or -not $perm.FromPort -or -not $perm.ToPort) { continue }
+    if ($port -lt [int]$perm.FromPort -or $port -gt [int]$perm.ToPort) { continue }
+    foreach ($r in $perm.IpRanges) {
+      if ($r.CidrIp -eq $cidr) { return $true }
+    }
+  }
+  $false
+}
+
 function Add-SGRule {
   param([int] $port, [string] $cidr)
   if ($cidr -match '["\x00\s,]') { throw "Refusing security group rule: CIDR has invalid characters" }
   $ipPerm = "IpProtocol=tcp,FromPort=$port,ToPort=$port,IpRanges=[{CidrIp=$cidr}]"
 
+  # 2>&1 to a variable is unreliable on Windows PowerShell for the AWS CLI: stderr
+  # can vanish, so we capture native stderr in a file and read the text.
+  $errF = [IO.Path]::GetTempFileName()
   $oldE = $ErrorActionPreference
   $ErrorActionPreference = "SilentlyContinue"
-  $raw  = & aws @(
+  $null = & aws @(
     "ec2", "authorize-security-group-ingress"
     "--profile", $ProfileName
     "--region", $Region
     "--group-id", $sgId
     "--ip-permissions", $ipPerm
-  ) 2>&1
+  ) 2> $errF
   $ex   = $LASTEXITCODE
   $ErrorActionPreference = $oldE
-
-  # $_.Exception.Message is often *empty* for external commands; ToString() keeps the
-  # real line:  aws: [ERROR]: An error occurred (InvalidPermission.Duplicate) when...
-  $rawStr = ($raw | ForEach-Object {
-    if ($null -eq $_) { "" }
-    elseif ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() }
-    else { "$_" }
-  }) -join " "
+  $rawStr = if (Test-Path -LiteralPath $errF) { (Get-Content -LiteralPath $errF -Raw -ErrorAction SilentlyContinue) } else { "" }
+  Remove-Item -LiteralPath $errF -ErrorAction SilentlyContinue
+  if ([string]::IsNullOrWhiteSpace($rawStr)) { $rawStr = "" } else { $rawStr = $rawStr.Trim() }
 
   if ($ex -eq 0) { return }
   if ($rawStr -match '(?i)InvalidPermission|Duplicate|already') { return }
+  # If authorize failed for Duplicate but stderr was empty, confirm via API.
+  if (Test-SGRuleExists -port $port -cidr $cidr) { return }
   throw "authorize-security-group-ingress port $port for $cidr (exit $ex): $rawStr"
 }
 Add-SGRule 22  $sshCidr
