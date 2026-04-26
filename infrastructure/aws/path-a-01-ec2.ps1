@@ -141,10 +141,15 @@ foreach ($n in $ssmParamNames) {
 if ([string]::IsNullOrWhiteSpace($ami) -or $ami -eq "None") { throw "Failed to resolve AL2023 AMI from SSM Parameter Store (tried known parameter names)" }
 Write-Host "AL2023 AMI: $ami" -ForegroundColor Cyan
 
-# --user-data file URL for Windows: must use forward slashes after file:
-$ab = (Resolve-Path $userDataPath).Path -replace "\\", "/"
-# file:// + C:/Users/...  =>  file:///C:/Users/... (required by AWS CLI on Windows)
-if ($ab -match "^[A-Z]:/") { $udUrl = "file:///" + $ab } else { $udUrl = "file://" + $ab }
+# --user-data: the AWS CLI often fails to open file:// / fileb:// paths on **OneDrive**
+# (Errno 22 "Invalid argument"). Copy to a normal local path first.
+$stagedUserData = Join-Path $env:TEMP "procoreconnect-userdata-$([IO.Path]::GetFileName($userDataPath))"
+Copy-Item -LiteralPath $userDataPath -Destination $stagedUserData -Force
+$stagedPath = (Resolve-Path -LiteralPath $stagedUserData).Path
+$stagedF = $stagedPath -replace "\\", "/"
+# fileb:// = binary read + base64 (safe for shebang + line endings on Windows)
+if ($stagedF -match "^[A-Z]:") { $udUrl = "fileb:///" + $stagedF } else { $udUrl = "fileb://" + $stagedF }
+Write-Host "Staged user-data for AWS CLI: $stagedPath" -ForegroundColor DarkGray
 
 # --- Launch instance -------------------------------------------------------
 $instanceId = (& aws ec2 run-instances --profile $ProfileName --region $Region `

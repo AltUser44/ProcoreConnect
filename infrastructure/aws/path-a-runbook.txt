@@ -7,6 +7,10 @@ Prereqs
 0) Do NOT commit secrets: never commit .pem, .env with DB passwords, or AWS access keys to git.
    (Root .gitignore ignores *.pem and .env files.)
 
+0b) If run-instances fails on "--user-data" with Errno 22: your repo is likely under
+   OneDrive; the script now copies user-data to %TEMP% and uses fileb:// (fixed in
+   a280205+). Pull latest path-a-01-ec2.ps1 and re-run.
+
 1) Create the EC2 app box (t3.micro + Docker) + Elastic IP
    Open PowerShell:
    cd C:\path\to\ProcoreConnect\infrastructure\aws
