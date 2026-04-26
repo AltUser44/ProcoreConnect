@@ -109,18 +109,44 @@ if ($allSgs -and $allSgs -ne "None") {
   Write-Host "Created security group: $sgId" -ForegroundColor Cyan
 }
 
-# Ingress. Re-run is OK: "InvalidPermission.Duplicate" is ignored.
+# Ingress. Re-run is OK when rules already exist (API returns a Duplicate error).
+# Use --cli-input-json from %TEMP% (avoids OneDrive) and a real JSON body so
+# the AWS CLI "shorthand" for --ip-permissions is never misparsed in PowerShell
+# (CIDRs like 107.x.x.x/32 break the shorthand on Windows with no visible output).
 function Add-SGRule {
   param([int] $port, [string] $cidr)
-  $ipPerm = "IpProtocol=tcp,FromPort=$port,ToPort=$port,IpRanges=[{CidrIp=$cidr}]"
+  $body = @"
+{
+  "GroupId": "$sgId",
+  "IpPermissions": [
+    {
+      "IpProtocol": "tcp",
+      "FromPort": $port,
+      "ToPort": $port,
+      "IpRanges": [ { "CidrIp": "$cidr" } ]
+    }
+  ]
+}
+"@
+  $jf   = Join-Path $env:TEMP "pc-sg-ingress-$(New-Guid).json"
+  $enc  = New-Object System.Text.UTF8Encoding $false
+  [IO.File]::WriteAllText($jf, $body, $enc)
+  $jUri = "file:///" + ((Resolve-Path -LiteralPath $jf).Path -replace "\\", "/")
+
   $oldE = $ErrorActionPreference
   $ErrorActionPreference = "SilentlyContinue"
-  $err = & aws ec2 authorize-security-group-ingress --profile $ProfileName --region $Region `
-    --group-id $sgId --ip-permissions $ipPerm 2>&1
+  $raw  = & aws ec2 authorize-security-group-ingress --profile $ProfileName --region $Region --cli-input-json $jUri 2>&1
+  $ex   = $LASTEXITCODE
   $ErrorActionPreference = $oldE
-  if ($LASTEXITCODE -ne 0 -and "$err" -notmatch "InvalidPermission\.Duplicate") {
-    throw "authorize-security-group-ingress failed: $err"
-  }
+  Remove-Item -LiteralPath $jf -ErrorAction SilentlyContinue
+
+  $rawStr = ($raw | ForEach-Object {
+    if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.Exception.Message } else { "$_" }
+  }) -join " "
+
+  if ($ex -eq 0) { return }
+  if ($rawStr -match '(?i)InvalidPermission|Duplicate|already') { return }
+  throw "authorize-security-group-ingress port $port for $cidr (exit $ex): $rawStr"
 }
 Add-SGRule 22  $sshCidr
 Add-SGRule 80  "0.0.0.0/0"
