@@ -110,32 +110,29 @@ if ($allSgs -and $allSgs -ne "None") {
 }
 
 # Ingress. Re-run is OK when rules already exist (API returns a Duplicate error).
-# Use --cli-input-json from %TEMP% (avoids OneDrive) and a real JSON body so
-# the AWS CLI "shorthand" for --ip-permissions is never misparsed in PowerShell
-# (CIDRs like 107.x.x.x/32 break the shorthand on Windows with no visible output).
+# Pass --group-id on the CLI; put ONLY the IpPermissions list in a %TEMP% JSON
+# and pass with --ip-permissions file://...  (a full --cli-input-json with GroupId
+# in the file can fail on Windows AWS CLI 2 with exit 252 and no error text).
 function Add-SGRule {
   param([int] $port, [string] $cidr)
-  $body = @"
-{
-  "GroupId": "$sgId",
-  "IpPermissions": [
-    {
-      "IpProtocol": "tcp",
-      "FromPort": $port,
-      "ToPort": $port,
-      "IpRanges": [ { "CidrIp": "$cidr" } ]
-    }
-  ]
-}
-"@
+  # One permission per call. Must be a real JSON *array* — PS ConvertTo-Json
+  # of a 1-item array can omit the outer "[]" and then the CLI paramfile is invalid.
+  $perm = [ordered]@{
+    IpProtocol = "tcp"
+    FromPort   = $port
+    ToPort     = $port
+    IpRanges   = @([ordered]@{ CidrIp = $cidr })
+  }
+  $json = (ConvertTo-Json -InputObject ( , $perm ) -Depth 5 -Compress)
   $jf   = Join-Path $env:TEMP "pc-sg-ingress-$(New-Guid).json"
   $enc  = New-Object System.Text.UTF8Encoding $false
-  [IO.File]::WriteAllText($jf, $body, $enc)
+  [IO.File]::WriteAllText($jf, $json, $enc)
   $jUri = "file:///" + ((Resolve-Path -LiteralPath $jf).Path -replace "\\", "/")
 
   $oldE = $ErrorActionPreference
   $ErrorActionPreference = "SilentlyContinue"
-  $raw  = & aws ec2 authorize-security-group-ingress --profile $ProfileName --region $Region --cli-input-json $jUri 2>&1
+  $raw  = & aws ec2 authorize-security-group-ingress --profile $ProfileName --region $Region `
+    --group-id $sgId --ip-permissions $jUri 2>&1
   $ex   = $LASTEXITCODE
   $ErrorActionPreference = $oldE
   Remove-Item -LiteralPath $jf -ErrorAction SilentlyContinue
