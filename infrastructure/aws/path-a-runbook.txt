@@ -1,0 +1,41 @@
+PATH A — "portfolio lean" deploy in us-east-1 (one EC2 + RDS + ECR; no ALB)
+
+Prereqs
+- You completed: aws configure --profile procoreconnect, region us-east-1, sts get-caller-identity works
+- This repo: infrastructure/aws/ scripts
+
+0) Do NOT commit secrets: never commit .pem, .env with DB passwords, or AWS access keys to git.
+   (Root .gitignore ignores *.pem and .env files.)
+
+1) Create the EC2 app box (t3.micro + Docker) + Elastic IP
+   Open PowerShell:
+   cd C:\path\to\ProcoreConnect\infrastructure\aws
+   Set-ExecutionPolicy -Scope CurrentUser -RemoteSigned
+   .\path-a-01-ec2.ps1
+   - Script creates an EC2 key pair and writes <name>.pem next to the script.
+   - Tighten Windows permissions on the PEM (if storing locally):
+     icacls ".\procoreconnect-procore-key.pem" /inheritance:r
+     icacls ".\procoreconnect-procore-key.pem" /grant:r "%USERNAME%:R"
+   - SSH: easiest from WSL, or use a Windows OpenSSH build:
+     ssh -i procoreconnect-procore-key.pem ec2-user@<EIP from script output>
+   - Wait 2-5 min for user-data, then: docker --version, docker compose version, tail /var/log/procoreconnect-bootstrap.log
+
+2) RDS PostgreSQL (Free Tier db.t3.micro) — *next step after EC2 is up*
+   - Create DB subnet group using default VPC subnets in AT LEAST 2 availability zones
+   - Security group: allow TCP 5432 FROM the EC2 security group only
+   - Master user/password: store in a password manager; never commit
+   - Point Rails DATABASE_* env to the RDS endpoint, port 5432
+   (Exact console clicks in the next pass — or a second script once DB rules are set.)
+
+3) ECR: push the Rails and frontend images
+   - Create ECR repo(s) in us-east-1, docker login, tag, push
+   - On EC2: docker pull from ECR, run the same shape as home docker compose with env
+
+4) Frontend static: S3 + CloudFront (or serve via nginx on EC2 to keep phase 1 minimal)
+   - VITE_API_BASE_URL to your public https API URL when you add TLS
+
+5) TLS
+   - Path A with no ALB: put nginx + Let's Encrypt (certbot) on EC2, or front with CloudFront+ACM later.
+
+6) Teardown
+   - Terminate the EC2 instance, release the Elastic IP (small charge if you keep an *unassigned* EIP), delete the RDS, empty/delete S3 buckets, delete the key pair in EC2, remove security groups and VPC artifacts you created

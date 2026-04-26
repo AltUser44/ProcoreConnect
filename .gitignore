@@ -24,3 +24,9 @@ Desktop.ini
 # Local commit message scratch file
 .commit-msg.tmp
 
+# AWS: never commit private keys (EC2, CloudFront keys, etc.)
+*.pem
+*.p12
+.aws/
+infrastructure/**/.env.deploy
+
