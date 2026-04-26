@@ -42,7 +42,10 @@ Rails.application.configure do
   # config.assume_ssl = true
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # Defaults on for real production deploys (which sit behind an SSL-terminating
+  # load balancer); set RAILS_FORCE_SSL=false for environments that don't have
+  # SSL in front, e.g. local docker compose smoke tests.
+  config.force_ssl = ENV.fetch("RAILS_FORCE_SSL", "true") == "true"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
@@ -63,9 +66,9 @@ Rails.application.configure do
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
 
-  # Use a real queuing backend for Active Job (and separate queues per environment).
-  # config.active_job.queue_adapter = :resque
-  # config.active_job.queue_name_prefix = "procoreconnect_production"
+  # Route ActiveJob through Sidekiq so the dedicated sidekiq container actually
+  # picks up SyncJob (etc.) instead of running them inline in the web process.
+  config.active_job.queue_adapter = :sidekiq
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
