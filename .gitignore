@@ -29,4 +29,5 @@ Desktop.ini
 *.p12
 .aws/
 infrastructure/**/.env.deploy
+infrastructure/aws/.rds-creds.local
 

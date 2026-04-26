@@ -24,16 +24,22 @@ Prereqs
      ssh -i procoreconnect-procore-key.pem ec2-user@<EIP from script output>
    - Wait 2-5 min for user-data, then: docker --version, docker compose version, tail /var/log/procoreconnect-bootstrap.log
 
-2) RDS PostgreSQL (Free Tier db.t3.micro) — *next step after EC2 is up*
-   - Create DB subnet group using default VPC subnets in AT LEAST 2 availability zones
-   - Security group: allow TCP 5432 FROM the EC2 security group only
-   - Master user/password: store in a password manager; never commit
-   - Point Rails DATABASE_* env to the RDS endpoint, port 5432
-   (Exact console clicks in the next pass — or a second script once DB rules are set.)
+2) RDS PostgreSQL (Free Tier db.t3.micro) — *next after EC2 is up*
+   cd C:\path\to\ProcoreConnect\infrastructure\aws
+   .\path-a-02-rds.ps1
+   - Subnet group: two subnets in different AZs in the default VPC
+   - procoreconnect-rds-sg: TCP 5432 from procoreconnect-app-sg only; RDS is not public
+   - First run: writes master password to .rds-creds.local (gitignored). Or:
+     $sec = Read-Host "Password" -AsSecureString; .\path-a-02-rds.ps1 -MasterPassword $sec
+   - Set on the app host: DATABASE_HOST, DATABASE_PORT, DATABASE_USERNAME, PROCORECONNECT_DATABASE_PASSWORD
+   - Production DB / user names match procoreconnect/config/database.yml (database procoreconnect_production)
 
-3) ECR: push the Rails and frontend images
-   - Create ECR repo(s) in us-east-1, docker login, tag, push
-   - On EC2: docker pull from ECR, run the same shape as home docker compose with env
+3) ECR: create repos + how to build/push
+   .\path-a-03-ecr.ps1
+   - From repo root, run the printed docker build / ecr get-login-password / tag / push commands
+   - Path A EC2 must be able to pull: attach an instance profile to the instance with
+     AmazonEC2ContainerRegistryReadOnly (or equivalent ECR read policy) — use IAM in the console, then
+     re-boot or re-login; do not long-term store IAM user keys on the host.
 
 4) Frontend static: S3 + CloudFront (or serve via nginx on EC2 to keep phase 1 minimal)
    - VITE_API_BASE_URL to your public https API URL when you add TLS
