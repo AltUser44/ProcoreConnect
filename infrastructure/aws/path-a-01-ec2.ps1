@@ -28,6 +28,8 @@ param(
   [string] $InstanceType   = "t3.micro"
 )
 
+# "Stop" is kept for our own "throw" statements, but the AWS CLI writes expected
+# failures (e.g. key not found) to stderr — so those calls are wrapped below.
 $ErrorActionPreference = "Stop"
 
 # Avoid accidental double-runs: one tagged app instance at a time
@@ -74,7 +76,12 @@ Write-Host "Public subnet: $subnetId" -ForegroundColor Cyan
 
 # --- Key pair (writes .pem next to this script) ---------------------------
 $pemPath = Join-Path $scriptDir "$KeyName.pem"
-& aws ec2 describe-key-pairs --profile $ProfileName --region $Region --key-names $KeyName 2>&1 | Out-Null
+# Must discard stderr: "not found" is normal when we need to create. (2>&1|Out-Null
+# still records errors and can trip -ErrorAction Stop; 2>$null does not.)
+$oldEap = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+$null = & aws ec2 describe-key-pairs --profile $ProfileName --region $Region --key-names $KeyName 2>$null
+$ErrorActionPreference = $oldEap
 if ($LASTEXITCODE -eq 0) {
   Write-Warning "Key pair '$KeyName' already exists in this region. Skipping create. If you lost the .pem, delete the key pair in EC2 and re-run."
 } else {
@@ -106,8 +113,11 @@ if ($allSgs -and $allSgs -ne "None") {
 function Add-SGRule {
   param([int] $port, [string] $cidr)
   $ipPerm = "IpProtocol=tcp,FromPort=$port,ToPort=$port,IpRanges=[{CidrIp=$cidr}]"
+  $oldE = $ErrorActionPreference
+  $ErrorActionPreference = "SilentlyContinue"
   $err = & aws ec2 authorize-security-group-ingress --profile $ProfileName --region $Region `
     --group-id $sgId --ip-permissions $ipPerm 2>&1
+  $ErrorActionPreference = $oldE
   if ($LASTEXITCODE -ne 0 -and "$err" -notmatch "InvalidPermission\.Duplicate") {
     throw "authorize-security-group-ingress failed: $err"
   }
