@@ -131,8 +131,12 @@ function Add-SGRule {
   $ex   = $LASTEXITCODE
   $ErrorActionPreference = $oldE
 
+  # $_.Exception.Message is often *empty* for external commands; ToString() keeps the
+  # real line:  aws: [ERROR]: An error occurred (InvalidPermission.Duplicate) when...
   $rawStr = ($raw | ForEach-Object {
-    if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.Exception.Message } else { "$_" }
+    if ($null -eq $_) { "" }
+    elseif ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() }
+    else { "$_" }
   }) -join " "
 
   if ($ex -eq 0) { return }
