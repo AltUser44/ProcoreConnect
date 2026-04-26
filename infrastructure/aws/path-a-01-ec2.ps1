@@ -110,13 +110,14 @@ if ($allSgs -and $allSgs -ne "None") {
 }
 
 # Ingress. Re-run is OK when rules already exist (API returns a Duplicate error).
-# Pass --ip-permissions as one JSON *array* argument (see splat below). Using
-# file:// for this param often yields exit 252 and no text on some Windows + AWS CLI 2
-# builds, even with valid JSON in %TEMP%.
+# Use the AWS *simplified* --ip-permissions string (one rule per value), e.g.:
+#   IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=1.1.1.1/32}]
+# A *JSON* string starting with '[' is the wrong format for the inline value and
+# causes exit 252 with no text on the AWS CLI. New PowerShell has nothing to do with it.
 function Add-SGRule {
   param([int] $port, [string] $cidr)
-  if ($cidr -match '["\x00]') { throw "Refusing security group rule: invalid CIDR characters" }
-  $ipPermJson = "[{`"IpProtocol`":`"tcp`",`"FromPort`":$port,`"ToPort`":$port,`"IpRanges`":[{`"CidrIp`":`"$cidr`"}]}]"
+  if ($cidr -match '["\x00\s,]') { throw "Refusing security group rule: CIDR has invalid characters" }
+  $ipPerm = "IpProtocol=tcp,FromPort=$port,ToPort=$port,IpRanges=[{CidrIp=$cidr}]"
 
   $oldE = $ErrorActionPreference
   $ErrorActionPreference = "SilentlyContinue"
@@ -125,7 +126,7 @@ function Add-SGRule {
     "--profile", $ProfileName
     "--region", $Region
     "--group-id", $sgId
-    "--ip-permissions", $ipPermJson
+    "--ip-permissions", $ipPerm
   ) 2>&1
   $ex   = $LASTEXITCODE
   $ErrorActionPreference = $oldE
