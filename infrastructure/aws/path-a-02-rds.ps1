@@ -117,7 +117,7 @@ if ($MasterPassword) {
     $plainPw = "Pc" + ([BitConverter]::ToString($bytes) -replace "-", "") + "1!"
     if ($plainPw.Length -lt 8) { throw "Generated password too short" }
     [IO.File]::WriteAllText($credsFile, "PROCORECONNECT_DATABASE_PASSWORD=$plainPw`nMASTER_USERNAME=$MasterUsername`n")
-    Write-Warning "Wrote generated master password to $credsFile (not committed; see .gitignore). Back it up securely."
+    Write-Warning ('Wrote generated master password to {0} (not committed; see .gitignore). Back it up securely.' -f $credsFile)
   } else {
     Write-Host "Reusing existing password from $credsFile" -ForegroundColor Yellow
   }
@@ -186,7 +186,11 @@ Write-Host "==== RDS ====" -ForegroundColor Magenta
 Write-Host "DB instance id:  $DbInstanceId" -ForegroundColor Magenta
 Write-Host "Engine DB name:  $InitialDbName" -ForegroundColor Magenta
 Write-Host "Instance status: $st2" -ForegroundColor Magenta
-if ($epAddr -and $epAddr -ne "None") { Write-Host "Endpoint:        $epAddr" -ForegroundColor Magenta } else { Write-Host "Endpoint:        (not ready yet; check EC2 > RDS in console or re-run: aws rds describe-db-instances --db-instance-identifier $DbInstanceId)" -ForegroundColor Yellow }
+if ($epAddr -and $epAddr -ne "None") {
+  Write-Host "Endpoint:        $epAddr" -ForegroundColor Magenta
+} else {
+  Write-Host ('Endpoint:        (not ready yet; check EC2 > RDS in console or re-run: aws rds describe-db-instances --db-instance-identifier {0})' -f $DbInstanceId) -ForegroundColor Yellow
+}
 Write-Host "Username:        $MasterUsername" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Set on the app host (EC2 .env or secrets):"
