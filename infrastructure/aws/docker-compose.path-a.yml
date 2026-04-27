@@ -1,0 +1,45 @@
+# Path A — ECR images + local Redis + external RDS (from repo root, copy to EC2; see path-a-runbook.txt).
+# On the host: name this directory's env file exactly `.env` (gitignored) next to this file.
+# Container service name for Rails is `web` (required by procoreconnect/client/nginx.conf upstream).
+
+name: procoreconnect-patha
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks: [appnet]
+
+  web:
+    image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-web:latest
+    container_name: web
+    restart: unless-stopped
+    depends_on:
+      - redis
+    env_file: .env
+    networks: [appnet]
+    expose: ["3000"]
+    # Health: from host you can: docker exec web curl -sf http://127.0.0.1:3000/healthz (if route exists) or / up
+
+  sidekiq:
+    image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-web:latest
+    command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
+    restart: unless-stopped
+    depends_on:
+      - redis
+    env_file: .env
+    networks: [appnet]
+
+  frontend:
+    image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-frontend:latest
+    container_name: frontend
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports: ["80:80"]
+    networks: [appnet]
+
+networks:
+  appnet:
+    name: procoreconnect
+    driver: bridge

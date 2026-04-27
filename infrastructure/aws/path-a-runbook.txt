@@ -43,7 +43,25 @@ Prereqs
      AmazonEC2ContainerRegistryReadOnly (or equivalent ECR read policy) — use IAM in the console, then
      re-boot or re-login; do not long-term store IAM user keys on the host.
 
-4) Frontend static: S3 + CloudFront (or serve via nginx on EC2 to keep phase 1 minimal)
+3b) Run the app on EC2 (Path A: Redis in Docker + Rails + Sidekiq + nginx frontend on port 80)
+   On the EC2 host (SSH as ec2-user; docker group must allow docker without sudo — re-login if needed):
+   - mkdir -p ~/deploy && cd ~/deploy
+   - Copy this repo from your PC, or at least: infrastructure/aws/docker-compose.path-a.yml
+     and use infrastructure/aws/env.path-a.example as a template for a file named `.env` in `~/deploy/`.
+   - Edit `.env`: set DATABASE_HOST (RDS endpoint), PROCORECONNECT_DATABASE_PASSWORD (from .rds-creds.local),
+     CORS_ORIGINS=http://<EIP> (e.g. http://52.21.77.124 with no :80), REDIS_URL=redis://redis:6379/0
+   - Generate secret values (on EC2, with images already pulled to this account):
+     docker run --rm 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-web:latest bin/rails secret
+     (run twice; assign to SECRET_KEY_BASE and JWT_SECRET in `.env`)
+     For AR_ENCRYPTION_*, from a dev checkout run `bundle exec rails db:encryption:init`, or run the same
+     in a one-off container with the web image; paste the three keys into `.env`.
+   - Prepare DB, then start:
+     docker compose -f docker-compose.path-a.yml run --rm --no-deps web bundle exec rails db:prepare
+     docker compose -f docker-compose.path-a.yml up -d
+   - In a browser: http://<EIP>/ — API under /api/ is reverse-proxied to Rails by the frontend image.
+   - The Rails container is named `web` on network `procoreconnect` (required by client/nginx.conf).
+
+4) Frontend static: S3 + CloudFront (or you already use nginx on EC2 for phase 1 — path 3b)
    - VITE_API_BASE_URL to your public https API URL when you add TLS
 
 5) TLS
