@@ -101,26 +101,6 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           <p className="mt-1 text-sm text-ink-500">{subtitle}</p>
         </div>
         {children}
-        <nav
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-ink-100 pt-4 text-xs text-ink-500"
-          aria-label="Legal and about"
-        >
-          <Link to="/about" className="font-medium hover:text-brand-600 hover:underline">
-            About
-          </Link>
-          <span className="text-ink-300" aria-hidden>
-            ·
-          </span>
-          <Link to="/privacy" className="font-medium hover:text-brand-600 hover:underline">
-            Privacy
-          </Link>
-          <span className="text-ink-300" aria-hidden>
-            ·
-          </span>
-          <Link to="/terms" className="font-medium hover:text-brand-600 hover:underline">
-            Terms
-          </Link>
-        </nav>
       </div>
     </div>
   );
