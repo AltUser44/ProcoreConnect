@@ -57,7 +57,7 @@ $frontTag = "$registry/${FrontRepo}:latest"
 Write-Host ""
 Write-Host "==== Docker: build, login, tag, push (run from repo root) ====" -ForegroundColor Magenta
 Write-Host "# Repo root (adjust path if needed):" -ForegroundColor DarkGray
-Write-Host "  cd ``"$root``""
+Write-Host ('  cd "{0}"' -f $root)
 Write-Host ""
 Write-Host "# Build" -ForegroundColor DarkGray
 Write-Host "  docker build -t $WebRepo -f procoreconnect/Dockerfile procoreconnect"

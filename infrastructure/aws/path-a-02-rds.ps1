@@ -87,7 +87,7 @@ if ($rdsSg -and $rdsSg -ne "None" -and $rdsSg.Trim() -ne "") {
 } else {
   $rdsSg = (& aws ec2 create-security-group --profile $ProfileName --region $Region `
     --group-name $RdsSgName `
-    --description "procoreconnect Path A (RDS) — from app SG only" `
+    --description "procoreconnect Path A (RDS) from app SG only" `
     --vpc-id $vpcId `
     --query "GroupId" --output text)
   if ($LASTEXITCODE -ne 0 -or -not $rdsSg) { throw "create-security-group failed" }
@@ -174,7 +174,7 @@ if ($LASTEXITCODE -eq 0 -and $st -and $st -ne "None" -and $st.Trim() -ne "") {
     --backup-retention-period 1 `
     --tags "Key=Name,Value=procoreconnect-rds" "Key=app,Value=procoreconnect"
   if ($LASTEXITCODE -ne 0) { throw "create-db-instance failed" }
-  Write-Host "create-db-instance submitted. Provisioning can take 5–15 minutes." -ForegroundColor Green
+  Write-Host "create-db-instance submitted. Provisioning can take 5-15 minutes." -ForegroundColor Green
 }
 
 # --- show endpoint
