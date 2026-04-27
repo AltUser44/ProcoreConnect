@@ -37,15 +37,16 @@ Rails.application.configure do
   # config.action_cable.url = "wss://example.com/cable"
   # config.action_cable.allowed_request_origins = [ "http://example.com", /http:\/\/example.*/ ]
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  # Can be used together with config.force_ssl for Strict-Transport-Security and secure cookies.
-  # config.assume_ssl = true
-
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  # Defaults on for real production deploys (which sit behind an SSL-terminating
-  # load balancer); set RAILS_FORCE_SSL=false for environments that don't have
-  # SSL in front, e.g. local docker compose smoke tests.
-  config.force_ssl = ENV.fetch("RAILS_FORCE_SSL", "true") == "true"
+  # TLS-terminated reverse proxy (host nginx, ALB): Puma sees http://. With force_ssl alone,
+  # Rails redirects to HTTPS forever (redirect loop). assume_ssl trusts X-Forwarded-Proto.
+  # Set RAILS_ASSUME_SSL=false only if TLS terminates at Puma, not at the proxy.
+  force_ssl = ENV.fetch("RAILS_FORCE_SSL", "true") == "true"
+  config.force_ssl = force_ssl
+  config.assume_ssl = if ENV.key?("RAILS_ASSUME_SSL")
+    ENV["RAILS_ASSUME_SSL"] == "true"
+  else
+    force_ssl
+  end
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
