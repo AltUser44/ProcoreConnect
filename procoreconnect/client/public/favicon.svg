@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <path
+    d="M20 2L36.32 11.5v17L20 38L3.68 28.5v-17L20 2z"
+    fill="#f24f00"
+  />
+  <text
+    x="20"
+    y="25"
+    text-anchor="middle"
+    font-size="14"
+    font-weight="800"
+    font-family="Inter, system-ui, sans-serif"
+    fill="white"
+    letter-spacing="-0.5"
+  >PC</text>
+</svg>
