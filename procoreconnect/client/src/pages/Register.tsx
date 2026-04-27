@@ -98,6 +98,17 @@ export function Register() {
             onChange={setConfirmation}
           />
         </Field>
+        <p className="text-center text-xs leading-relaxed text-ink-500">
+          By creating an account, you agree to our{" "}
+          <Link to="/terms" className="font-semibold text-brand-600 hover:underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="font-semibold text-brand-600 hover:underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
         <button
           type="submit"
           disabled={submitting}

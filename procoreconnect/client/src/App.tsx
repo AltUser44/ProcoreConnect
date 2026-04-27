@@ -4,6 +4,9 @@ import { IntegrationDetail } from "./pages/IntegrationDetail";
 import { NewIntegration } from "./pages/NewIntegration";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { About } from "./pages/About";
+import { Privacy } from "./pages/Privacy";
+import { Terms } from "./pages/Terms";
 import { HexLogo } from "./components/HexLogo";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -98,9 +101,23 @@ function Layout({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
 
       <footer className="border-t border-ink-100 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 text-xs text-ink-400">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-4 text-xs text-ink-400 sm:flex-row sm:items-center sm:justify-between">
           <span>ProcoreConnect — bridging your systems with the world.</span>
-          <span>v0.2</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link to="/about" className="font-medium text-ink-500 hover:text-brand-600 hover:underline">
+              About
+            </Link>
+            <Link
+              to="/privacy"
+              className="font-medium text-ink-500 hover:text-brand-600 hover:underline"
+            >
+              Privacy
+            </Link>
+            <Link to="/terms" className="font-medium text-ink-500 hover:text-brand-600 hover:underline">
+              Terms
+            </Link>
+            <span className="text-ink-300 sm:ml-2">v0.2</span>
+          </div>
         </div>
       </footer>
     </div>
@@ -115,6 +132,9 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
 
             <Route
               path="/"
