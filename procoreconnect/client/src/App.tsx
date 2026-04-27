@@ -7,6 +7,7 @@ import { Register } from "./pages/Register";
 import { About } from "./pages/About";
 import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
+import { NotFound } from "./pages/NotFound";
 import { HexLogo } from "./components/HexLogo";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -160,14 +161,9 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="*"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
+            {/* Public: unknown paths must not use ProtectedRoute or guests get sent to /login
+                (and old bundles without /about etc. would match * before those routes existed). */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
       </AuthProvider>
