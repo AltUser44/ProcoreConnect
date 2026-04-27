@@ -40,6 +40,14 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Catch accidental empty/truncated saves (e.g. editor glitch): full script is several KB.
+if ($PSCommandPath) {
+  $scriptBytes = (Get-Item -LiteralPath $PSCommandPath).Length
+  if ($scriptBytes -lt 4000) {
+    throw "path-a-02-rds.ps1 looks truncated ($scriptBytes bytes). Restore from repo root: git checkout HEAD -- infrastructure/aws/path-a-02-rds.ps1"
+  }
+}
+
 # --- default VPC
 $vpcId = (& aws ec2 describe-vpcs --profile $ProfileName --region $Region `
   --filters "Name=isDefault,Values=true" `
