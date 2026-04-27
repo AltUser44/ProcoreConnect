@@ -1,24 +1,5 @@
-# README
+# ProcoreConnect (Rails)
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+The main application lives in this directory. For **architecture, Docker, AWS Path A, and environment variables**, start at the **repository root** [`README.md`](../README.md).
 
-Things you may want to cover:
-
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+**Quick local (non-Docker) dev** (from this directory): use `config/database.yml` and your own Postgres/Redis; for the full stack, use **`docker compose`** from the repo root with a root [`.env`](../.env.docker.example) (see the root README).
