@@ -1,5 +1,7 @@
 # ProcoreConnect
 
+**Author:** Kester Nkese
+
 **ProcoreConnect** is an **integration platform** for connecting internal systems to **third-party HTTP APIs** with a **first-party dashboard**: users define **integrations** (endpoints, credentials, status), run **syncs**, review **sync logs**, and accept **signed webhooks** for real-time events. The stack is a **Ruby on Rails 7+ API** with **Active Record encryption** for sensitive fields, a **Sidekiq** job layer, a **React (Vite + TypeScript) SPA** served by **nginx**, and **PostgreSQL** + **Redis**.
 
 This repository is a **monorepo**: `procoreconnect/` (Rails) and `procoreconnect/client/` (frontend), with **Docker Compose** for a production-shaped local run and **CI** on GitHub Actions. A separate **`infrastructure/aws/`** path documents a lean **AWS** “Path A” deploy (EC2 + RDS + ECR) without a shared ALB.
@@ -179,9 +181,9 @@ A minimal “portfolio-lean” path: **t3.micro EC2**, **RDS PostgreSQL**, **ECR
 
 ---
 
-## License / ownership
+## License
 
-Replace this section with your org’s **license** and **contact** when you publish. Internal documentation links (Confluence, runbooks) can be added here.
+Copyright © Kester Nkese. Add a **license** file (e.g. MIT, Apache-2.0, or proprietary) when you publish; until then, all rights reserved unless you state otherwise in a `LICENSE` file at the repository root.
 
 ---
 
