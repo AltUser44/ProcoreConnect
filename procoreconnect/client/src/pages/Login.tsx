@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { HexLogo } from "../components/HexLogo";
+import { PasswordRevealInput } from "../components/PasswordRevealInput";
 
 export function Login() {
   const { status, login } = useAuth();
@@ -58,14 +59,12 @@ export function Login() {
           />
         </Field>
         <Field label="Password" htmlFor="password">
-          <input
+          <PasswordRevealInput
             id="password"
-            type="password"
             required
             autoComplete="current-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={inputClass}
+            onChange={setPassword}
           />
         </Field>
         <button

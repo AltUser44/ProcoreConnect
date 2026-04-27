@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { AuthShell } from "./Login";
+import { PasswordRevealInput } from "../components/PasswordRevealInput";
 
 export function Register() {
   const { status, register } = useAuth();
@@ -78,27 +79,23 @@ export function Register() {
           />
         </Field>
         <Field label="Password" htmlFor="password" hint="Minimum 8 characters.">
-          <input
+          <PasswordRevealInput
             id="password"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={inputClass}
+            onChange={setPassword}
           />
         </Field>
         <Field label="Confirm password" htmlFor="confirmation">
-          <input
+          <PasswordRevealInput
             id="confirmation"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
             value={confirmation}
-            onChange={(e) => setConfirmation(e.target.value)}
-            className={inputClass}
+            onChange={setConfirmation}
           />
         </Field>
         <button
