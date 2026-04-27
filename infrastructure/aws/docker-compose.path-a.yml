@@ -12,6 +12,7 @@ services:
 
   web:
     image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-web:latest
+    pull_policy: always
     container_name: web
     restart: unless-stopped
     depends_on:
@@ -23,6 +24,7 @@ services:
 
   sidekiq:
     image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-web:latest
+    pull_policy: always
     command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
     restart: unless-stopped
     depends_on:
@@ -32,6 +34,7 @@ services:
 
   frontend:
     image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-frontend:latest
+    pull_policy: always
     container_name: frontend
     restart: unless-stopped
     depends_on:
