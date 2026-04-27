@@ -7,6 +7,7 @@ interface WebhookSetupProps {
 
 export function WebhookSetup({ integration }: WebhookSetupProps) {
   const [secretRevealed, setSecretRevealed] = useState(false);
+  // dev: vite 3001 → point at rails; prod build: same-origin, env optional
   const apiBase =
     (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? window.location.origin.replace(":3001", ":3000");
 
@@ -15,6 +16,7 @@ export function WebhookSetup({ integration }: WebhookSetupProps) {
     [apiBase, integration.id],
   );
 
+  // openssl hmac must match rails Integration#valid_webhook_signature?
   const sampleCurl = useMemo(
     () =>
       [

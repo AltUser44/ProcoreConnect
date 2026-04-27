@@ -1,9 +1,7 @@
 class Integration < ApplicationRecord
   STATUSES = %w[active paused error].freeze
 
-  # api_key is sensitive third-party credential material and must never be
-  # readable in plaintext from the DB. Non-deterministic so identical inputs
-  # produce different ciphertexts; we never need to query by api_key.
+  # at-rest only; non-deterministic enc so we never need to query by api_key
   encrypts :api_key
 
   belongs_to :user
@@ -30,9 +28,7 @@ class Integration < ApplicationRecord
     status == "active"
   end
 
-  # Verifies an incoming webhook signature against this integration's secret.
-  # Expected header format: "sha256=<hex digest of HMAC-SHA256(secret, raw_body)>"
-  # Uses constant-time comparison to avoid leaking secret material via timing.
+  # expect "sha256=<hex hmac of raw body>"; secure_compare to avoid timing leaks
   def valid_webhook_signature?(header_value, raw_body)
     return false if header_value.blank? || webhook_secret.blank?
     return false unless header_value.start_with?("sha256=")
@@ -41,8 +37,7 @@ class Integration < ApplicationRecord
     expected   = OpenSSL::HMAC.hexdigest("SHA256", webhook_secret, raw_body.to_s)
     ActiveSupport::SecurityUtils.secure_compare(received, expected)
   rescue ArgumentError
-    # secure_compare raises on length mismatch.
-    false
+    false # length mismatch from secure_compare
   end
 
   private

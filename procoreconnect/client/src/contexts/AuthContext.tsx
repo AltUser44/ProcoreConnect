@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
 
+  // jwt in localStorage; /me fails → drop token, back to unauthed
   const bootstrap = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!token) {

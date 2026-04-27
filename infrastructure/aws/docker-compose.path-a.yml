@@ -13,7 +13,7 @@ services:
   web:
     image: 905838125586.dkr.ecr.us-east-1.amazonaws.com/procoreconnect-web:latest
     pull_policy: always
-    container_name: web
+    container_name: web # must match nginx upstream in client image
     restart: unless-stopped
     depends_on:
       - redis

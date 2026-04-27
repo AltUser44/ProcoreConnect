@@ -42,12 +42,12 @@ services:
       RAILS_ENV: production
       RAILS_LOG_TO_STDOUT: "1"
       RAILS_SERVE_STATIC_FILES: "1"
-      # Local compose has no SSL terminator. Real prod deploys behind an ALB
-      # should leave this unset (or set to "true").
+      # no ssl terminator in local compose; set true only behind real tls
       RAILS_FORCE_SSL: ${RAILS_FORCE_SSL:-false}
       DATABASE_HOST: postgres
       DATABASE_PORT: "5432"
       DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      # one postgres password → both rails env names (see database.yml production)
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       PROCORECONNECT_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       REDIS_URL: redis://redis:6379/0
@@ -91,8 +91,7 @@ services:
       context: ./procoreconnect/client
       dockerfile: Dockerfile
       args:
-        # Empty on purpose so the SPA hits the same origin via nginx, which
-        # reverse-proxies /api/* to the Rails web service inside the network.
+        # empty = same origin; nginx forwards /api to rails
         VITE_API_BASE_URL: ""
     depends_on:
       - web
